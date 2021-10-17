@@ -23,10 +23,10 @@ ds = MonDataset(train_images, train_labels, moyenne, std)
 LR = 1e-6
 BATCHSIZE = 5
 D_ENCODING = 256
-PATH = Path(str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING)+"_model.pch")
+PATH = Path("AUTOENCODER_MODELS/_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING)+"_model.pch")
 
 train_data = DataLoader(ds , shuffle=True , batch_size=BATCHSIZE)
-writer = SummaryWriter("runs/runs_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING))
+writer = SummaryWriter("runs/autoencoder/_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING))
 
 ae = AutoEncoder(ds.datax.size(1),D_ENCODING)
 ae = ae.to(device) #model is on gpu

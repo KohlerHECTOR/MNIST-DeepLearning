@@ -13,18 +13,54 @@ from torch.utils.tensorboard import SummaryWriter
 # Téléchargement des données
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+#DATA PREPROCESSING
 from datamaestro import prepare_dataset
 ds = prepare_dataset("com.lecun.mnist");
 train_images, train_labels = ds.train.images.data(), ds.train.labels.data()
 test_images, test_labels =  ds.test.images.data(), ds.test.labels.data()
 moyenne = train_images.mean()
 std = train_images.std()
-ds = MonDataset(train_images, train_labels, moyenne, std, do_one_hot = True)
+ds = MonDataset(train_images, train_labels, moyenne, std)
 
 d_in = ds.datax.size(1)
-d_out = ds.datay.size(1)
+d_out = 10
+d_hidden = 100
+LR = 1e-5
+BATCHSIZE = 50
+D_ENCODING = d_in
+ARCHI = "LINEAR_SIMPLE/" # AUTOENCODER, HIGHWAY
+PATH = Path("CLASSIF_MODELS/"+ARCHI+"_Dhidden_"+str(d_hidden)+"_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING)+"_model.pch")
+
 print("DIM IN: ", d_in)
 print("DIM OUT: ", d_out)
-classifModel = nn.Sequential(nn.Linear(d_in, 100), nn.ReLU(), nn.Linear(100,d_out ))
+
+train_data = DataLoader(ds , shuffle=True , batch_size=BATCHSIZE)
+writer = SummaryWriter("runs/classif/"+str(ARCHI)+"_Dhidden_"+str(d_hidden)+"_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING))
+
+classifModel = nn.Sequential(nn.Linear(d_in, d_hidden), nn.ReLU(), nn.Linear(d_hidden,d_out ))
 classifModel = classifModel.to(device)
 CEL = nn.CrossEntropyLoss()
+CEL = CEL.to(device)
+optimizer = torch.optim.SGD(classifModel.parameters(), lr=LR)
+
+epoch = 1
+count = 0
+for n_iter in range(epoch):
+    for datax,datay in train_data:
+        datax = datax.to(device)
+        datay = datay.to(device)
+        yhat = classifModel.forward(datax)
+        loss = CEL.forward(yhat, datay)
+        # on peut visualiser avec
+        # tensorboard --logdir runs/
+        writer.add_scalar('Loss/train', loss, count)
+        #
+        # # Sortie directe
+        print(f"Itérations {count}: loss {loss}")
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        count += 1
+
+
+torch.save(classifModel.state_dict(), PATH)
