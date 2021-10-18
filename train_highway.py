@@ -1,3 +1,4 @@
+from highway_network import Highway
 from pathlib import Path
 import os
 import torch
@@ -8,12 +9,10 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import datetime
 from pretraitement import MonDataset
-from autoencoder import AutoEncoder
 from torch.utils.tensorboard import SummaryWriter
 # Téléchargement des données
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-#DATA PREPROCESSING
 from datamaestro import prepare_dataset
 ds = prepare_dataset("com.lecun.mnist");
 train_images, train_labels = ds.train.images.data(), ds.train.labels.data()
@@ -21,14 +20,15 @@ test_images, test_labels =  ds.test.images.data(), ds.test.labels.data()
 moyenne = train_images.mean()
 std = train_images.std()
 ds = MonDataset(train_images, train_labels, moyenne, std)
+#  TODO:
 
 d_in = ds.datax.size(1)
 d_out = 10
-d_hidden = 100
-LR = 1e-5
+d_hidden = d_in
+LR = 1e-8
 BATCHSIZE = 5
 D_ENCODING = d_in
-ARCHI = "LINEAR_SIMPLE/" # AUTOENCODER, HIGHWAY
+ARCHI = "HIGHWAY/" # AUTOENCODER, HIGHWAY
 PATH = Path("CLASSIF_MODELS/"+ARCHI+"_Dhidden_"+str(d_hidden)+"_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING)+"_model.pch")
 
 print("DIM IN: ", d_in)
@@ -37,7 +37,14 @@ print("DIM OUT: ", d_out)
 train_data = DataLoader(ds , shuffle=True , batch_size=BATCHSIZE)
 writer = SummaryWriter("runs/classif/"+str(ARCHI)+"_Dhidden_"+str(d_hidden)+"_lr_"+str(LR)+"_batchsize_"+str(BATCHSIZE)+"_Dencoding_"+str(D_ENCODING))
 
-classifModel = nn.Sequential(nn.Linear(d_in, d_hidden), nn.ReLU(), nn.Linear(d_hidden,d_out ))
+classifModel = nn.Sequential(Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             Highway(d_in, d_in),
+                             nn.Linear(d_in,d_out))
 classifModel = classifModel.to(device)
 CEL = nn.CrossEntropyLoss()
 CEL = CEL.to(device)
@@ -64,6 +71,7 @@ for n_iter in range(epoch):
 
 
 torch.save(classifModel.state_dict(), PATH)
+
 ##TEST
 moyenne = test_images.mean()
 std = test_images.std()
