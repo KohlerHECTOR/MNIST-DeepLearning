@@ -14,6 +14,3 @@ class Highway(nn.Module):
         T = self.sigm(H)
         # print(H.size(), T.size(), x.size())
         return H * T + x * (1 - T)
-
-
-highway = Highway(10,32)
